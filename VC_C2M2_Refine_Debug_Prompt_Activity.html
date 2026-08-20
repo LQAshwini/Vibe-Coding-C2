@@ -1,0 +1,683 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Refine a Debugging Prompt</title>
+  <style>
+    :root {
+      --background: #f5f8fc;
+      --surface: #ffffff;
+      --surface-soft: #eef4fb;
+      --text: #172033;
+      --muted: #5f6b7a;
+      --border: #cdd8e6;
+      --accent: #2563eb;
+      --accent-dark: #1d4ed8;
+      --success: #166534;
+      --success-bg: #ecfdf3;
+      --warning: #8a4b08;
+      --warning-bg: #fff7ed;
+      --danger: #9f1239;
+      --danger-bg: #fff1f2;
+      --shadow: 0 18px 44px rgba(23, 32, 51, 0.08);
+      --radius: 18px;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--background);
+      color: var(--text);
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      line-height: 1.5;
+    }
+
+    button, input { font: inherit; }
+
+    button:focus-visible,
+    input:focus-visible,
+    [tabindex]:focus-visible {
+      outline: 3px solid rgba(37, 99, 235, 0.35);
+      outline-offset: 3px;
+    }
+
+    .shell {
+      width: min(1080px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 40px 0 56px;
+    }
+
+    .intro {
+      max-width: 760px;
+      margin-bottom: 24px;
+    }
+
+    .eyebrow {
+      margin: 0 0 8px;
+      color: var(--accent-dark);
+      font-weight: 750;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      font-size: 0.78rem;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(2rem, 5vw, 3.4rem);
+      letter-spacing: -0.04em;
+      line-height: 1.02;
+    }
+
+    .lede {
+      margin: 16px 0 0;
+      color: var(--muted);
+      font-size: 1.05rem;
+      max-width: 68ch;
+    }
+
+    .definition {
+      display: inline-block;
+      margin-top: 14px;
+      padding: 9px 12px;
+      border-radius: 10px;
+      background: var(--surface-soft);
+      color: var(--text);
+      font-size: 0.94rem;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.08fr) minmax(320px, 0.92fr);
+      gap: 20px;
+      align-items: start;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 22px;
+    }
+
+    .section-title {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+
+    .section-title h2 {
+      margin: 0;
+      font-size: 1.2rem;
+      letter-spacing: -0.02em;
+    }
+
+    .section-title span {
+      color: var(--muted);
+      font-size: 0.86rem;
+    }
+
+    .scenario {
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      overflow: hidden;
+      margin-bottom: 18px;
+    }
+
+    .scenario-head {
+      padding: 12px 14px;
+      background: var(--surface-soft);
+      font-weight: 700;
+    }
+
+    .evidence {
+      display: grid;
+      gap: 0;
+    }
+
+    .evidence-row {
+      display: grid;
+      grid-template-columns: 104px 1fr;
+      gap: 12px;
+      padding: 12px 14px;
+      border-top: 1px solid var(--border);
+      align-items: start;
+    }
+
+    .evidence-row strong {
+      color: var(--muted);
+      font-size: 0.84rem;
+    }
+
+    code, .mono {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 0.89em;
+      overflow-wrap: anywhere;
+    }
+
+    fieldset {
+      border: 0;
+      padding: 0;
+      margin: 0;
+    }
+
+    legend {
+      font-weight: 750;
+      margin-bottom: 10px;
+    }
+
+    .choice-list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .choice {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 10px;
+      padding: 12px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      cursor: pointer;
+      transition: border-color 140ms ease, background 140ms ease;
+    }
+
+    .choice:hover { border-color: #9eb4d3; }
+    .choice:has(input:checked) {
+      border-color: var(--accent);
+      background: #f7faff;
+    }
+
+    .choice input {
+      margin: 3px 0 0;
+      width: 18px;
+      height: 18px;
+      accent-color: var(--accent);
+    }
+
+    .choice strong { display: block; margin-bottom: 2px; }
+    .choice small { color: var(--muted); display: block; }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 16px;
+    }
+
+    button {
+      border: 0;
+      border-radius: 10px;
+      min-height: 42px;
+      padding: 0 15px;
+      font-weight: 750;
+      cursor: pointer;
+    }
+
+    .primary {
+      background: var(--accent);
+      color: #fff;
+    }
+
+    .primary:hover { background: var(--accent-dark); }
+
+    .secondary {
+      background: var(--surface-soft);
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+
+    .feedback {
+      margin-top: 14px;
+      min-height: 76px;
+      padding: 13px 14px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: var(--surface-soft);
+    }
+
+    .feedback.success {
+      border-color: #86c99b;
+      background: var(--success-bg);
+      color: var(--success);
+    }
+
+    .feedback.warning {
+      border-color: #e5b06d;
+      background: var(--warning-bg);
+      color: var(--warning);
+    }
+
+    .feedback.danger {
+      border-color: #e7a1b5;
+      background: var(--danger-bg);
+      color: var(--danger);
+    }
+
+    .feedback strong { display: block; margin-bottom: 3px; }
+
+    .preview-label {
+      margin: 0 0 8px;
+      color: var(--muted);
+      font-size: 0.84rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .prompt-preview {
+      min-height: 185px;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      background: #0f172a;
+      color: #e8eef8;
+      padding: 16px;
+      white-space: pre-wrap;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 0.9rem;
+      line-height: 1.55;
+    }
+
+    .sim-result {
+      margin-top: 14px;
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      padding: 14px;
+      background: var(--surface-soft);
+    }
+
+    .sim-result h3 {
+      margin: 0 0 8px;
+      font-size: 1rem;
+    }
+
+    .sim-result p { margin: 0; }
+
+    .play-card { margin-top: 20px; }
+
+    .play-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+      gap: 18px;
+      align-items: stretch;
+    }
+
+    .play-controls {
+      display: grid;
+      gap: 10px;
+    }
+
+    .toggle-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      padding: 11px 12px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+    }
+
+    .toggle-row label { font-weight: 650; cursor: pointer; }
+
+    .toggle-row input {
+      width: 20px;
+      height: 20px;
+      accent-color: var(--accent);
+      flex: 0 0 auto;
+    }
+
+    .play-output {
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 16px;
+      background: var(--surface-soft);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      min-height: 186px;
+    }
+
+    .quality {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 800;
+      margin-bottom: 8px;
+    }
+
+    .dot {
+      width: 11px;
+      height: 11px;
+      border-radius: 50%;
+      border: 2px solid currentColor;
+      display: inline-block;
+    }
+
+    .play-output p { margin: 0; color: var(--muted); }
+    .play-output .example { margin-top: 12px; color: var(--text); }
+
+    .hint {
+      margin: 12px 0 0;
+      color: var(--muted);
+      font-size: 0.88rem;
+    }
+
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    #verification-report { display: none; }
+
+    @media (max-width: 780px) {
+      .grid, .play-grid { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 480px) {
+      .shell {
+        width: min(100% - 20px, 1080px);
+        padding: 24px 0 36px;
+      }
+      .card { padding: 16px; border-radius: 15px; }
+      .evidence-row { grid-template-columns: 1fr; gap: 4px; }
+      .section-title { align-items: flex-start; flex-direction: column; gap: 4px; }
+      .actions { display: grid; grid-template-columns: 1fr; }
+      button { width: 100%; }
+      .toggle-row { align-items: flex-start; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        scroll-behavior: auto !important;
+        transition-duration: 0.001ms !important;
+        animation-duration: 0.001ms !important;
+        animation-iteration-count: 1 !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <header class="intro">
+      <p class="eyebrow">Vibe Coding · Debugging practice</p>
+      <h1>Turn “fix this” into a useful debugging prompt.</h1>
+      <p class="lede">AI can suggest better fixes when you give it evidence from the failure and keep the request narrow. Your job is to choose the context that helps an assistant act on the diagnosed cause instead of guessing.</p>
+      <p class="definition"><strong>Observed state</strong> means what the app’s data or behavior actually looked like at the moment it failed.</p>
+    </header>
+
+    <section class="grid" aria-label="Practice zone">
+      <article class="card">
+        <div class="section-title">
+          <h2>Practice: build the debugging request</h2>
+          <span>Exercise scenario</span>
+        </div>
+
+        <div class="scenario" aria-label="Bug evidence">
+          <div class="scenario-head">A profile card goes blank when the service returns no user record.</div>
+          <div class="evidence">
+            <div class="evidence-row">
+              <strong>Console</strong>
+              <code>TypeError: Cannot read properties of null (reading 'name') at renderProfile (profile.js:42)</code>
+            </div>
+            <div class="evidence-row">
+              <strong>Relevant line</strong>
+              <code>nameEl.textContent = profile.name;</code>
+            </div>
+            <div class="evidence-row">
+              <strong>Observed state</strong>
+              <span class="mono">profile === null</span>
+            </div>
+            <div class="evidence-row">
+              <strong>Goal</strong>
+              <span>Keep the card visible and show “Profile unavailable” when no record is returned.</span>
+            </div>
+          </div>
+        </div>
+
+        <fieldset>
+          <legend>Choose what to include in the AI request.</legend>
+          <div class="choice-list">
+            <label class="choice">
+              <input type="checkbox" data-part="error">
+              <span><strong>Exact error and location</strong><small>Include the TypeError and <span class="mono">profile.js:42</span>.</small></span>
+            </label>
+            <label class="choice">
+              <input type="checkbox" data-part="snippet">
+              <span><strong>Relevant code only</strong><small>Include the line that reads <span class="mono">profile.name</span>, not the whole project.</small></span>
+            </label>
+            <label class="choice">
+              <input type="checkbox" data-part="state">
+              <span><strong>Observed state</strong><small>Say that <span class="mono">profile</span> is <span class="mono">null</span> when the crash occurs.</small></span>
+            </label>
+            <label class="choice">
+              <input type="checkbox" data-part="constraint">
+              <span><strong>Narrow fix constraint</strong><small>Ask for a localized null-handling fix that preserves the existing card.</small></span>
+            </label>
+            <label class="choice">
+              <input type="checkbox" data-part="broad">
+              <span><strong>Rewrite everything</strong><small>Ask the assistant to replace the whole profile feature with a better version.</small></span>
+            </label>
+          </div>
+        </fieldset>
+
+        <div class="actions">
+          <button class="primary" type="button" id="checkBtn">Check request</button>
+          <button class="secondary" type="button" id="resetBtn">Reset choices</button>
+        </div>
+        <div id="feedback" class="feedback" aria-live="polite">
+          Select the evidence and scope you would give the coding assistant, then check your request.
+        </div>
+      </article>
+
+      <aside class="card" aria-label="Prompt and simulated result">
+        <p class="preview-label">Your request</p>
+        <div id="promptPreview" class="prompt-preview" aria-live="polite">Fix this error.</div>
+        <div class="sim-result" aria-live="polite">
+          <h3>Simulated result</h3>
+          <p id="simResult">With almost no context, the assistant has to guess which code and behavior matter. It may propose a broad rewrite instead of a targeted fix.</p>
+        </div>
+        <p class="hint">This is a deterministic local preview, not a live AI model.</p>
+      </aside>
+    </section>
+
+    <section class="card play-card" aria-label="Play zone">
+      <div class="section-title">
+        <h2>Play: change the context, watch the suggestion change</h2>
+        <span>No single “perfect wording”</span>
+      </div>
+      <p class="lede" style="margin-top:0; font-size:0.98rem;">There is no single right answer here. Compare the trade-offs and notice what changes as the request becomes more or less grounded.</p>
+      <div class="play-grid">
+        <div class="play-controls">
+          <div class="toggle-row">
+            <label for="playError">Include error evidence</label>
+            <input id="playError" type="checkbox" checked>
+          </div>
+          <div class="toggle-row">
+            <label for="playState">Include observed state</label>
+            <input id="playState" type="checkbox" checked>
+          </div>
+          <div class="toggle-row">
+            <label for="playScope">Keep the request narrowly scoped</label>
+            <input id="playScope" type="checkbox" checked>
+          </div>
+        </div>
+        <div class="play-output" aria-live="polite">
+          <div id="quality" class="quality"><span class="dot" aria-hidden="true"></span><span>Focused</span></div>
+          <p id="playExplanation">The assistant can connect the crash to the null value and propose a small fix at the relevant access point.</p>
+          <p id="playExample" class="example"><strong>Example output:</strong> “Check for a null profile before reading <span class="mono">profile.name</span>; keep the existing card and render the fallback text when the record is missing.”</p>
+        </div>
+      </div>
+    </section>
+
+    <div id="verification-report" aria-hidden="true"></div>
+  </main>
+
+  <script>
+    (() => {
+      const parts = [...document.querySelectorAll('[data-part]')];
+      const preview = document.getElementById('promptPreview');
+      const simResult = document.getElementById('simResult');
+      const feedback = document.getElementById('feedback');
+      const checkBtn = document.getElementById('checkBtn');
+      const resetBtn = document.getElementById('resetBtn');
+
+      const textByPart = {
+        error: "Error: TypeError: Cannot read properties of null (reading 'name') at renderProfile (profile.js:42).",
+        snippet: "Relevant line: nameEl.textContent = profile.name;",
+        state: "Observed state: profile is null when the crash occurs.",
+        constraint: "Please make the smallest localized change that handles the null case, keeps the existing card, and shows ‘Profile unavailable’. Explain why the change addresses this error.",
+        broad: "Rewrite the entire profile feature from scratch and improve anything else you notice."
+      };
+
+      function selectedSet() {
+        return new Set(parts.filter(el => el.checked).map(el => el.dataset.part));
+      }
+
+      function evaluateSelection(set) {
+        const required = ['error', 'snippet', 'state', 'constraint'];
+        const missing = required.filter(key => !set.has(key));
+        const hasBroad = set.has('broad');
+        return { success: missing.length === 0 && !hasBroad, missing, hasBroad };
+      }
+
+      function buildPrompt(set) {
+        const selected = ['error', 'snippet', 'state', 'constraint', 'broad']
+          .filter(key => set.has(key))
+          .map(key => textByPart[key]);
+        return selected.length ? selected.join('\n\n') : 'Fix this error.';
+      }
+
+      function updatePreview() {
+        const set = selectedSet();
+        preview.textContent = buildPrompt(set);
+        const evaluation = evaluateSelection(set);
+        const evidenceCount = ['error', 'snippet', 'state'].filter(key => set.has(key)).length;
+
+        if (evaluation.success) {
+          simResult.textContent = 'The request points to the failing line, shows the null state, and limits the change. A useful suggestion can directly address the null access while preserving the surrounding feature.';
+        } else if (evaluation.hasBroad) {
+          simResult.textContent = 'The request includes a broad rewrite instruction. Even with useful evidence, that expands the blast radius and can introduce unrelated changes or regressions.';
+        } else if (evidenceCount >= 2 && set.has('constraint')) {
+          simResult.textContent = 'The assistant has useful direction, but one piece of debugging evidence is still missing. It may infer the cause correctly, but the request is less grounded than it could be.';
+        } else if (evidenceCount >= 1) {
+          simResult.textContent = 'There is some evidence now, but the assistant still has to infer important context or scope. The suggestion may be plausible without being tightly tied to the observed failure.';
+        } else {
+          simResult.textContent = 'With almost no context, the assistant has to guess which code and behavior matter. It may propose a broad rewrite instead of a targeted fix.';
+        }
+      }
+
+      function missingLabel(key) {
+        return {
+          error: 'the exact error and location',
+          snippet: 'the relevant code line',
+          state: 'the observed null state',
+          constraint: 'a narrow fix constraint'
+        }[key];
+      }
+
+      function checkSelection() {
+        const evaluation = evaluateSelection(selectedSet());
+        feedback.className = 'feedback';
+
+        if (evaluation.success) {
+          feedback.classList.add('success');
+          feedback.innerHTML = '<strong>Well scoped.</strong>This version gives the assistant the failure signal, the relevant code, the observed state, and a boundary on the change. That makes a targeted null-handling fix much more likely than a speculative rewrite.';
+          return;
+        }
+
+        if (evaluation.hasBroad) {
+          feedback.classList.add('danger');
+          feedback.innerHTML = '<strong>Keep the blast radius smaller.</strong>The module’s debugging workflow recommends relevant snippets and tightly scoped fixes. Remove the “rewrite everything” instruction so the assistant stays focused on the diagnosed failure.';
+          return;
+        }
+
+        feedback.classList.add('warning');
+        const nextMissing = evaluation.missing[0];
+        const guidance = nextMissing
+          ? `Add ${missingLabel(nextMissing)}. That gives the assistant another concrete clue instead of asking it to guess.`
+          : 'Add the missing debugging context before asking for the fix.';
+        feedback.innerHTML = `<strong>Useful start, but the request is still under-specified.</strong>${guidance}`;
+      }
+
+      parts.forEach(el => el.addEventListener('change', updatePreview));
+      checkBtn.addEventListener('click', checkSelection);
+      resetBtn.addEventListener('click', () => {
+        parts.forEach(el => { el.checked = false; });
+        updatePreview();
+        feedback.className = 'feedback';
+        feedback.textContent = 'Select the evidence and scope you would give the coding assistant, then check your request.';
+      });
+
+      const playError = document.getElementById('playError');
+      const playState = document.getElementById('playState');
+      const playScope = document.getElementById('playScope');
+      const quality = document.getElementById('quality');
+      const playExplanation = document.getElementById('playExplanation');
+      const playExample = document.getElementById('playExample');
+
+      function updatePlay() {
+        const count = [playError.checked, playState.checked, playScope.checked].filter(Boolean).length;
+        let label;
+        let explanation;
+        let example;
+
+        if (count === 3) {
+          label = 'Focused';
+          explanation = 'The assistant can connect the crash to the null value and propose a small fix at the relevant access point.';
+          example = '“Check for a null profile before reading profile.name; keep the existing card and render the fallback text when the record is missing.”';
+        } else if (playScope.checked && (playError.checked || playState.checked)) {
+          label = 'Partly grounded';
+          explanation = 'The request is bounded, but it leaves out part of the evidence. The assistant may still need to infer why the failure occurs.';
+          example = '“I can make a localized change, but I need the exact error or runtime state to confirm which guard belongs here.”';
+        } else if (!playScope.checked && (playError.checked || playState.checked)) {
+          label = 'Evidence-rich, scope-poor';
+          explanation = 'The evidence points toward the cause, but the open-ended scope invites extra refactoring that is unrelated to the bug.';
+          example = '“I’ll fix the null access and also restructure the profile component for clarity.”';
+        } else {
+          label = 'Guess-heavy';
+          explanation = 'Without error evidence or observed state, the assistant has little basis for choosing a root cause. Any fix is mostly speculative.';
+          example = '“Try rewriting the profile-loading logic and adding general error handling.”';
+        }
+
+        quality.lastElementChild.textContent = label;
+        playExplanation.textContent = explanation;
+        playExample.innerHTML = '<strong>Example output:</strong> ' + example.replaceAll('profile.name', '<span class="mono">profile.name</span>');
+      }
+
+      [playError, playState, playScope].forEach(el => el.addEventListener('change', updatePlay));
+
+      function runInternalVerification() {
+        const good = evaluateSelection(new Set(['error', 'snippet', 'state', 'constraint']));
+        const incomplete = evaluateSelection(new Set(['error', 'constraint']));
+        const broad = evaluateSelection(new Set(['error', 'snippet', 'state', 'constraint', 'broad']));
+        const checks = {
+          successful_state_recognized: good.success === true,
+          incomplete_state_caught: incomplete.success === false && incomplete.missing.includes('snippet') && incomplete.missing.includes('state'),
+          broad_rewrite_caught: broad.success === false && broad.hasBroad === true,
+          prompt_contains_evidence: buildPrompt(new Set(['error', 'state'])).includes('TypeError') && buildPrompt(new Set(['error', 'state'])).includes('profile is null')
+        };
+        const report = document.getElementById('verification-report');
+        report.textContent = JSON.stringify(checks);
+        report.setAttribute('data-pass', Object.values(checks).every(Boolean) ? 'true' : 'false');
+        report.style.display = 'block';
+      }
+
+      updatePreview();
+      updatePlay();
+      if (new URLSearchParams(location.search).get('verify') === '1') runInternalVerification();
+    })();
+  </script>
+</body>
+</html>
