@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Module 2.2 Activity — Debug AI-Generated Code</title>
+<style>
+body{font-family:Arial,Helvetica,sans-serif;margin:0;background:#f4f6f8;color:#1f2937}
+header{background:#111827;color:white;padding:20px}
+main{max-width:1100px;margin:auto;padding:20px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.card{background:white;border-radius:12px;padding:16px;box-shadow:0 2px 8px rgba(0,0,0,.08)}
+textarea{width:100%;height:180px;font-family:monospace;padding:10px}
+button{padding:10px 14px;margin:4px;border:0;border-radius:8px;background:#2563eb;color:white;cursor:pointer}
+button.secondary{background:#4b5563}
+pre{background:#111827;color:#d1fae5;padding:12px;border-radius:8px;white-space:pre-wrap;min-height:90px}
+.step{font-weight:bold;color:#2563eb}
+.status{padding:10px;border-radius:8px;background:#eef2ff;margin-top:10px}
+@media(max-width:800px){.grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header>
+<h1>Debug the AI-Generated Checkout</h1>
+<p>Target time: 20 minutes</p>
+</header>
+<main>
+<div class="card">
+<p><span class="step">Observe:</span> A checkout confirmation works for registered users but fails for guest users. Your job is to diagnose the failure, edit the code, run it, inspect the feedback, improve the fix, and retest.</p>
+</div>
+
+<div class="grid">
+<div class="card">
+<h2>App Preview</h2>
+<button onclick="runCase('registered')">Run Registered Checkout</button>
+<button onclick="runCase('guest')">Run Guest Checkout</button>
+<div id="preview" class="status">Run a checkout scenario to observe the behavior.</div>
+</div>
+
+<div class="card">
+<h2>Editable Code</h2>
+<p><span class="step">Change something:</span> Fix the line that assumes every response has a customer.</p>
+<textarea id="code">function renderConfirmation(response) {
+  const customerName = response.customer.name;
+  return "Thank you, " + customerName +
+         "! Order #" + response.orderId + " is confirmed.";
+}</textarea>
+<button onclick="applyCode()">Apply Change</button>
+<button class="secondary" onclick="resetCode()">Reset</button>
+</div>
+
+<div class="card">
+<h2>Console</h2>
+<pre id="console">No console output yet.</pre>
+</div>
+
+<div class="card">
+<h2>Network Response</h2>
+<pre id="network">No network request yet.</pre>
+</div>
+</div>
+
+<div class="card">
+<h2>Retest</h2>
+<p><span class="step">Inspect feedback → Improve → Retest:</span> Your fix is successful only if both registered and guest checkout work.</p>
+<button onclick="runTests()">Run Both Tests</button>
+<div id="result" class="status">Tests not run yet.</div>
+</div>
+</main>
+
+<script>
+let userCode = document.getElementById('code').value;
+
+const registered = {orderId:"1042",status:"confirmed",customer:{name:"Maya"}};
+const guest = {orderId:"1043",status:"confirmed",customer:null};
+
+function applyCode(){ userCode=document.getElementById('code').value; document.getElementById('result').textContent="Change applied. Run a scenario."; }
+function resetCode(){ document.getElementById('code').value=`function renderConfirmation(response) {
+  const customerName = response.customer.name;
+  return "Thank you, " + customerName +
+         "! Order #" + response.orderId + " is confirmed.";
+}`; applyCode(); }
+
+function execute(response){
+  try{
+    const fn = new Function("response", userCode + "\nreturn renderConfirmation(response);");
+    return {ok:true,value:fn(response)};
+  }catch(e){
+    return {ok:false,error:e.toString()};
+  }
+}
+
+function runCase(type){
+  const data = type==="registered"?registered:guest;
+  document.getElementById('network').textContent=JSON.stringify(data,null,2);
+  const r=execute(data);
+  if(r.ok){
+    document.getElementById('preview').textContent=r.value;
+    document.getElementById('console').textContent="No errors.";
+  }else{
+    document.getElementById('preview').textContent="Confirmation failed.";
+    document.getElementById('console').textContent=r.error;
+  }
+}
+
+function runTests(){
+  const a=execute(registered), b=execute(guest);
+  if(a.ok && b.ok){
+    document.getElementById('result').innerHTML="✅ Success. Both registered and guest checkout now work. You diagnosed and repaired the hidden data assumption.";
+  }else{
+    let msg="❌ Not yet. ";
+    if(!a.ok) msg+="Registered checkout still fails. ";
+    if(!b.ok) msg+="Guest checkout still fails. Inspect the Console and Network response, then improve your fix.";
+    document.getElementById('result').textContent=msg;
+  }
+}
+</script>
+</body>
+</html>

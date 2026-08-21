@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Module 2.3 Activity — Connect a Full-Stack Feature</title>
+<style>
+body{font-family:Arial,Helvetica,sans-serif;margin:0;background:#f4f6f8;color:#1f2937}
+header{background:#111827;color:white;padding:20px}
+main{max-width:1100px;margin:auto;padding:20px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.card{background:white;border-radius:12px;padding:16px;box-shadow:0 2px 8px rgba(0,0,0,.08)}
+input,select{width:100%;padding:9px;margin:5px 0 12px;box-sizing:border-box}
+button{padding:10px 14px;margin:4px;border:0;border-radius:8px;background:#2563eb;color:white;cursor:pointer}
+pre{background:#111827;color:#d1fae5;padding:12px;border-radius:8px;white-space:pre-wrap;min-height:90px}
+.status{padding:10px;border-radius:8px;background:#eef2ff;margin-top:10px}
+.step{font-weight:bold;color:#2563eb}
+@media(max-width:800px){.grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header><h1>Connect the Full-Stack Task Feature</h1><p>Target time: 20 minutes</p></header>
+<main>
+<div class="card">
+<p><span class="step">Observe:</span> The task form looks complete, but saving a task fails. Diagnose the frontend → API → database path, change the configuration, run it, inspect the response, improve, and retest.</p>
+</div>
+
+<div class="grid">
+<div class="card">
+<h2>Frontend</h2>
+<label>Task title</label>
+<input id="taskTitle" value="Review AI-generated feature">
+<button onclick="createTask()">Create Task</button>
+<div id="ui" class="status">No task created yet.</div>
+</div>
+
+<div class="card">
+<h2>Configuration</h2>
+<p><span class="step">Change something:</span> Correct the API settings.</p>
+<label>API Base URL</label>
+<select id="baseUrl">
+<option value="http://localhost:3000">http://localhost:3000</option>
+<option value="https://api.example.app">https://api.example.app</option>
+</select>
+<label>Endpoint</label>
+<select id="endpoint">
+<option value="/task">/task</option>
+<option value="/tasks">/tasks</option>
+</select>
+<label>CORS Origin</label>
+<select id="cors">
+<option value="*">*</option>
+<option value="https://app.example.app">https://app.example.app</option>
+</select>
+</div>
+
+<div class="card">
+<h2>Network / API Feedback</h2>
+<pre id="network">No request sent.</pre>
+</div>
+
+<div class="card">
+<h2>Database State</h2>
+<pre id="db">[]</pre>
+</div>
+</div>
+
+<div class="card">
+<h2>Retest</h2>
+<p><span class="step">Inspect feedback → Improve → Retest:</span> A correct setup should let the frontend create a task and persist it.</p>
+<button onclick="verify()">Run End-to-End Test</button>
+<div id="result" class="status">Not tested yet.</div>
+</div>
+</main>
+
+<script>
+let database=[];
+
+function createTask(){
+  const base=document.getElementById('baseUrl').value;
+  const endpoint=document.getElementById('endpoint').value;
+  const cors=document.getElementById('cors').value;
+  const title=document.getElementById('taskTitle').value;
+
+  if(base!=="https://api.example.app"){
+    document.getElementById('network').textContent="Request failed: frontend is calling localhost, which is not reachable from the deployed app.";
+    document.getElementById('ui').textContent="Save failed.";
+    return;
+  }
+  if(endpoint!=="/tasks"){
+    document.getElementById('network').textContent="404 Not Found: POST "+endpoint;
+    document.getElementById('ui').textContent="Save failed.";
+    return;
+  }
+  if(cors!=="https://app.example.app"){
+    document.getElementById('network').textContent="CORS error: production API must explicitly allow https://app.example.app";
+    document.getElementById('ui').textContent="Save failed.";
+    return;
+  }
+  const task={id:database.length+1,title};
+  database.push(task);
+  document.getElementById('network').textContent="201 Created\nPOST https://api.example.app/tasks\n"+JSON.stringify(task,null,2);
+  document.getElementById('db').textContent=JSON.stringify(database,null,2);
+  document.getElementById('ui').textContent='Saved: "'+title+'"';
+}
+
+function verify(){
+  database=[];
+  document.getElementById('db').textContent="[]";
+  createTask();
+  const ok=database.length===1;
+  document.getElementById('result').innerHTML=ok
+    ? "✅ Success. The frontend, API, CORS configuration, and simulated database now work together end to end."
+    : "❌ Not yet. Inspect the Network feedback, correct the configuration, and retest.";
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Module 2.4 Activity — Integrate a Third-Party API</title>
+<style>
+body{font-family:Arial,Helvetica,sans-serif;margin:0;background:#f4f6f8;color:#1f2937}
+header{background:#111827;color:white;padding:20px}
+main{max-width:1100px;margin:auto;padding:20px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.card{background:white;border-radius:12px;padding:16px;box-shadow:0 2px 8px rgba(0,0,0,.08)}
+input,select,textarea{width:100%;padding:9px;margin:5px 0 12px;box-sizing:border-box}
+button{padding:10px 14px;margin:4px;border:0;border-radius:8px;background:#2563eb;color:white;cursor:pointer}
+pre{background:#111827;color:#d1fae5;padding:12px;border-radius:8px;white-space:pre-wrap;min-height:90px}
+.status{padding:10px;border-radius:8px;background:#eef2ff;margin-top:10px}
+.step{font-weight:bold;color:#2563eb}
+@media(max-width:800px){.grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header><h1>Repair a Third-Party API Integration</h1><p>Target time: 20 minutes</p></header>
+<main>
+<div class="card">
+<p><span class="step">Observe:</span> An external summarization service is failing. Use the API documentation, change the request configuration, send it, inspect the response, improve the setup, and retest.</p>
+</div>
+
+<div class="grid">
+<div class="card">
+<h2>API Documentation</h2>
+<pre>Endpoint: POST https://api.summary.example/v1/summarize
+Authentication: Authorization: Bearer TEST_KEY_123
+Content-Type: application/json
+Success: 200
+Invalid/missing key: 401
+Rate limit: 429
+Body: {"text":"..."}</pre>
+</div>
+
+<div class="card">
+<h2>Request Builder</h2>
+<p><span class="step">Change something:</span> Correct the request.</p>
+<label>Method</label>
+<select id="method"><option>GET</option><option>POST</option></select>
+<label>Endpoint</label>
+<select id="url">
+<option>https://api.summary.example/summarize</option>
+<option>https://api.summary.example/v1/summarize</option>
+</select>
+<label>Authorization value</label>
+<input id="auth" value="TEST_KEY_123">
+<label>Text</label>
+<textarea id="text">AI-assisted development can accelerate application delivery when developers review, test, and validate generated code.</textarea>
+<button onclick="sendRequest()">Send API Request</button>
+</div>
+
+<div class="card">
+<h2>API Response</h2>
+<pre id="response">No request sent.</pre>
+</div>
+
+<div class="card">
+<h2>App Output</h2>
+<div id="output" class="status">No summary yet.</div>
+</div>
+</div>
+
+<div class="card">
+<h2>Failure Test</h2>
+<p><span class="step">Inspect feedback → Improve → Retest:</span> After getting a successful response, confirm the integration also handles a rate-limit failure without crashing.</p>
+<button onclick="test429()">Simulate 429 Rate Limit</button>
+<button onclick="verify()">Run Final Verification</button>
+<div id="result" class="status">Not verified yet.</div>
+</div>
+</main>
+
+<script>
+let success=false, handled429=false;
+
+function sendRequest(){
+  const method=document.getElementById('method').value;
+  const url=document.getElementById('url').value;
+  const auth=document.getElementById('auth').value.trim();
+
+  if(method!=="POST"){
+    document.getElementById('response').textContent="405 Method Not Allowed";
+    document.getElementById('output').textContent="Request failed. Inspect the API documentation.";
+    success=false; return;
+  }
+  if(url!=="https://api.summary.example/v1/summarize"){
+    document.getElementById('response').textContent="404 Not Found";
+    document.getElementById('output').textContent="Request failed. Check the endpoint.";
+    success=false; return;
+  }
+  if(auth!=="Bearer TEST_KEY_123"){
+    document.getElementById('response').textContent="401 Unauthorized\nExpected Authorization: Bearer TEST_KEY_123";
+    document.getElementById('output').textContent="Authentication failed.";
+    success=false; return;
+  }
+  document.getElementById('response').textContent='200 OK\n{"summary":"AI can speed delivery when generated code is reviewed, tested, and validated."}';
+  document.getElementById('output').textContent="AI can speed delivery when generated code is reviewed, tested, and validated.";
+  success=true;
+}
+
+function test429(){
+  document.getElementById('response').textContent='429 Too Many Requests\n{"retry_after":30}';
+  document.getElementById('output').textContent="Service is temporarily busy. Please retry shortly.";
+  handled429=true;
+}
+
+function verify(){
+  document.getElementById('result').innerHTML=(success && handled429)
+   ? "✅ Success. You completed a valid authenticated API request and handled a rate-limit failure gracefully."
+   : "❌ Not yet. Get one successful authenticated request and also test the 429 failure case.";
+}
+</script>
+</body>
+</html>
